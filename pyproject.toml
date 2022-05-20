@@ -1,0 +1,24 @@
+[tool.poetry]
+name = "MockingBirdForUse"
+version = "0.1.0"
+description = ""
+authors = ["meetwq <meetwq@gmail.com>"]
+
+[tool.poetry.dependencies]
+python = ">=3.8,<3.11"
+torch = "^1.11.0"
+scipy = "^1.8.0"
+librosa = "^0.9.0"
+numpy = "^1.19.0"
+pypinyin = "^0.46.0"
+webrtcvad = "^2.0.0"
+Unidecode = "^1.3.0"
+inflect = "^5.6.0"
+loguru = "^0.6.0"
+
+[tool.poetry.dev-dependencies]
+black = "^22.3.0"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
