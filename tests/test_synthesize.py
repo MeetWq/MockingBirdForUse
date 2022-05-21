@@ -6,11 +6,11 @@ from pathlib import Path
 def download(url: str, filename: str):
     from mockingbirdforuse.log import logger
 
-    resp = requests.get(url)
+    resp = requests.get(url, stream=True)
     total_size = int(resp.headers["Content-Length"])
     downloaded_size = 0
     with open(Path(filename), "wb") as f:
-        for chunk in resp.iter_content():
+        for chunk in resp.iter_content(chunk_size=1024):
             downloaded_size += f.write(chunk)
             logger.trace(
                 f"Download progress: {downloaded_size/total_size:.2%} "

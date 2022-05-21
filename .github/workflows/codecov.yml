@@ -32,7 +32,7 @@ jobs:
         if: ${{ runner.os == 'Linux' }}
         run: sudo apt-get install -y libsndfile1
       - name: Run tests
-        run: poetry run pytest -n auto -s -cov=mockingbirdforuse --cov-report xml
+        run: poetry run pytest -s
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v2
         with:
