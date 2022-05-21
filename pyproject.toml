@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "MockingBirdForUse"
-version = "0.2.0"
+version = "0.2.1"
 description = ""
 authors = ["meetwq <meetwq@gmail.com>"]
 
@@ -11,7 +11,7 @@ scipy = "^1.8.0"
 librosa = "^0.9.0"
 numpy = "^1.19.0"
 numba = "^0.55.0"
-pypinyin = "^0.46.0"
+pypinyin = ">=0.40.0"
 webrtcvad = "^2.0.0"
 Unidecode = "^1.3.0"
 inflect = "^5.6.0"
