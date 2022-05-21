@@ -1,11 +1,12 @@
 import time
 import torch
+import numpy as np
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn.parameter import Parameter
 
-from ..audio import *
-from .. import hparams
+from ..audio import de_emphasis, decode_mu_law
+from ..hparams import hparams as hp
 from ...distribution import sample_from_discretized_mix_logistic
 from ....log import logger
 
@@ -263,7 +264,7 @@ class WaveRNN(nn.Module):
 
         if mu_law:
             output = decode_mu_law(output, self.n_classes, False)
-        if hparams.apply_preemphasis:
+        if hp.apply_preemphasis:
             output = de_emphasis(output)
 
         # Fade-out at the end to avoid signal cutting out suddenly

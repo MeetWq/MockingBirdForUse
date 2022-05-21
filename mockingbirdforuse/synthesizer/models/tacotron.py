@@ -3,9 +3,9 @@ import numpy as np
 import torch.nn as nn
 import torch.nn.functional as F
 
-from ..hparams import hparams
+from ..hparams import hparams as hp
 from .global_style_token import GlobalStyleToken
-from ..gst_hyperparameters import GSTHyperparameters as gst_hp
+from ..gst_hyperparameters import hparams as gst_hp
 from ...log import logger
 
 
@@ -289,7 +289,7 @@ class Decoder(nn.Module):
             n_mels, fc1_dims=prenet_dims[0], fc2_dims=prenet_dims[1], dropout=dropout
         )
         self.attn_net = LSA(decoder_dims)
-        if hparams.use_gst:
+        if hp.use_gst:
             speaker_embedding_size += gst_hp.E
         self.attn_rnn = nn.GRUCell(
             encoder_dims + prenet_dims[1] + speaker_embedding_size, decoder_dims
@@ -401,10 +401,10 @@ class Tacotron(nn.Module):
             embed_dims, num_chars, encoder_dims, encoder_K, num_highways, dropout
         )
         project_dims = encoder_dims + speaker_embedding_size
-        if hparams.use_gst:
+        if hp.use_gst:
             project_dims += gst_hp.E
         self.encoder_proj = nn.Linear(project_dims, decoder_dims, bias=False)
-        if hparams.use_gst:
+        if hp.use_gst:
             self.gst = GlobalStyleToken(speaker_embedding_size)
         self.decoder = Decoder(
             n_mels,
@@ -465,7 +465,7 @@ class Tacotron(nn.Module):
 
         # Need an initial context vector
         size = self.encoder_dims + self.speaker_embedding_size
-        if hparams.use_gst:
+        if hp.use_gst:
             size += gst_hp.E
         context_vec = torch.zeros(batch_size, size, device=device)
 
@@ -473,7 +473,7 @@ class Tacotron(nn.Module):
         # The projection avoids unnecessary matmuls in the decoder loop
         encoder_seq = self.encoder(texts, speaker_embedding)
         # put after encoder
-        if hparams.use_gst and self.gst is not None:
+        if hp.use_gst and self.gst is not None:
             style_embed = self.gst(
                 speaker_embedding, speaker_embedding
             )  # for training, speaker embedding can represent both style inputs and referenced
@@ -548,7 +548,7 @@ class Tacotron(nn.Module):
 
         # Need an initial context vector
         size = self.encoder_dims + self.speaker_embedding_size
-        if hparams.use_gst:
+        if hp.use_gst:
             size += gst_hp.E
         context_vec = torch.zeros(batch_size, size, device=device)
 
@@ -557,7 +557,7 @@ class Tacotron(nn.Module):
         encoder_seq = self.encoder(x, speaker_embedding)
 
         # put after encoder
-        if hparams.use_gst and self.gst is not None:
+        if hp.use_gst and self.gst is not None:
             if style_idx >= 0 and style_idx < 10:
                 query = torch.zeros(1, 1, self.gst.stl.attention.num_units)
                 if device.type == "cuda":

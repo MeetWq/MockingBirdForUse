@@ -4,8 +4,8 @@ import torch.nn.init as init
 from torch.nn.parameter import Parameter
 import torch.nn.functional as tFunctional
 
-from ..hparams import hparams
-from ..gst_hyperparameters import GSTHyperparameters as hp
+from ..hparams import hparams as hp
+from ..gst_hyperparameters import hparams as gst_hp
 
 
 class GlobalStyleToken(nn.Module):
@@ -24,7 +24,7 @@ class GlobalStyleToken(nn.Module):
     def forward(self, inputs, speaker_embedding=None):
         enc_out = self.encoder(inputs)
         # concat speaker_embedding according to https://github.com/mozilla/TTS/blob/master/TTS/tts/layers/gst_layers.py
-        if hparams.use_ser_for_gst and speaker_embedding is not None:
+        if hp.use_ser_for_gst and speaker_embedding is not None:
             enc_out = torch.cat([enc_out, speaker_embedding], dim=-1)
         style_embed = self.stl(enc_out)
 
@@ -40,8 +40,8 @@ class ReferenceEncoder(nn.Module):
     def __init__(self):
 
         super().__init__()
-        K = len(hp.ref_enc_filters)
-        filters = [1] + hp.ref_enc_filters
+        K = len(gst_hp.ref_enc_filters)
+        filters = [1] + gst_hp.ref_enc_filters
         convs = [
             nn.Conv2d(
                 in_channels=filters[i],
@@ -54,19 +54,19 @@ class ReferenceEncoder(nn.Module):
         ]
         self.convs = nn.ModuleList(convs)
         self.bns = nn.ModuleList(
-            [nn.BatchNorm2d(num_features=hp.ref_enc_filters[i]) for i in range(K)]
+            [nn.BatchNorm2d(num_features=gst_hp.ref_enc_filters[i]) for i in range(K)]
         )
 
-        out_channels = self.calculate_channels(hp.n_mels, 3, 2, 1, K)
+        out_channels = self.calculate_channels(gst_hp.n_mels, 3, 2, 1, K)
         self.gru = nn.GRU(
-            input_size=hp.ref_enc_filters[-1] * out_channels,
-            hidden_size=hp.E // 2,
+            input_size=gst_hp.ref_enc_filters[-1] * out_channels,
+            hidden_size=gst_hp.E // 2,
             batch_first=True,
         )
 
     def forward(self, inputs):
         N = inputs.size(0)
-        out = inputs.view(N, 1, -1, hp.n_mels)  # [N, 1, Ty, n_mels]
+        out = inputs.view(N, 1, -1, gst_hp.n_mels)  # [N, 1, Ty, n_mels]
         for conv, bn in zip(self.convs, self.bns):
             out = conv(out)
             out = bn(out)
@@ -96,14 +96,16 @@ class STL(nn.Module):
     def __init__(self, speaker_embedding_dim=None):
 
         super().__init__()
-        self.embed = Parameter(torch.FloatTensor(hp.token_num, hp.E // hp.num_heads))
-        d_q = hp.E // 2
-        d_k = hp.E // hp.num_heads
-        # self.attention = MultiHeadAttention(hp.num_heads, d_model, d_q, d_v)
-        if hparams.use_ser_for_gst and speaker_embedding_dim is not None:
+        self.embed = Parameter(
+            torch.FloatTensor(gst_hp.token_num, gst_hp.E // gst_hp.num_heads)
+        )
+        d_q = gst_hp.E // 2
+        d_k = gst_hp.E // gst_hp.num_heads
+        # self.attention = MultiHeadAttention(gst_hp.num_heads, d_model, d_q, d_v)
+        if hp.use_ser_for_gst and speaker_embedding_dim is not None:
             d_q += speaker_embedding_dim
         self.attention = MultiHeadAttention(
-            query_dim=d_q, key_dim=d_k, num_units=hp.E, num_heads=hp.num_heads
+            query_dim=d_q, key_dim=d_k, num_units=gst_hp.E, num_heads=gst_hp.num_heads
         )
 
         init.normal_(self.embed, mean=0, std=0.5)

@@ -6,10 +6,10 @@ from pathlib import Path
 from scipy.io import wavfile
 from typing import List, Literal, Optional
 
-from .encoder import inference as Encoder
+from .encoder.inference import Encoder, preprocess_wav
 from .synthesizer.inference import Synthesizer
-from .vocoder.hifigan import inference as gan_vocoder
-from .vocoder.wavernn import inference as rnn_vocoder
+from .vocoder.hifigan.inference import HifiGanVocoder
+from .vocoder.wavernn.inference import WaveRNNVocoder
 from .log import logger
 
 
@@ -24,9 +24,14 @@ def process_text(text: str) -> List[str]:
 
 
 class MockingBird:
-    @classmethod
+    def __init__(self):
+        self.encoder: Optional[Encoder] = None
+        self.gan_vocoder: Optional[HifiGanVocoder] = None
+        self.rnn_vocoder: Optional[WaveRNNVocoder] = None
+        self.synthesizer: Optional[Synthesizer] = None
+
     def load_model(
-        cls,
+        self,
         encoder_path: Path,
         gan_vocoder_path: Optional[Path] = None,
         rnn_vocoder_path: Optional[Path] = None,
@@ -39,27 +44,24 @@ class MockingBird:
             gan_vocoder_path (Path): HifiGan Vocoder模型路径，可选，需要用到 HifiGan 类型时必须填写
             rnn_vocoder_path (Path): WaveRNN Vocoder模型路径，可选，需要用到 WaveRNN 类型时必须填写
         """
-        Encoder.load_model(encoder_path)
+        self.encoder = Encoder(encoder_path)
         if gan_vocoder_path:
-            gan_vocoder.load_model(gan_vocoder_path)
+            self.gan_vocoder = HifiGanVocoder(gan_vocoder_path)
         if rnn_vocoder_path:
-            rnn_vocoder.load_model(rnn_vocoder_path)
-        cls.synthesizer: Optional[Synthesizer] = None
+            self.rnn_vocoder = WaveRNNVocoder(rnn_vocoder_path)
 
-    @classmethod
-    def set_synthesizer(cls, synthesizer_path: Path):
+    def set_synthesizer(self, synthesizer_path: Path):
         """
         设置Synthesizer模型路径
 
         Args:
             synthesizer_path (Path): Synthesizer模型路径
         """
-        cls.synthesizer = Synthesizer(synthesizer_path)
+        self.synthesizer = Synthesizer(synthesizer_path)
         logger.info(f"using synthesizer model: {synthesizer_path}")
 
-    @classmethod
     def synthesize(
-        cls,
+        self,
         text: str,
         input_wav: Path,
         vocoder_type: Literal["HifiGan", "WaveRNN"] = "HifiGan",
@@ -78,21 +80,24 @@ class MockingBird:
             min_stop_token (int, optional): Accuracy(精度) 范围3~9，默认为 5
             steps (int, optional): MaxLength(最大句长) 范围200~2000，默认为 1000
         """
-        if not cls.synthesizer:
+        if not self.encoder:
+            raise Exception("Please set encoder path first")
+
+        if not self.synthesizer:
             raise Exception("Please set synthesizer path first")
 
         # Load input wav
         wav, sample_rate = librosa.load(input_wav)
 
-        encoder_wav = Encoder.preprocess_wav(wav, sample_rate)
-        embed, _, _ = Encoder.embed_utterance(encoder_wav, return_partials=True)
+        encoder_wav = preprocess_wav(wav, sample_rate)
+        embed, _, _ = self.encoder.embed_utterance(encoder_wav, return_partials=True)
 
         # Load input text
         texts = process_text(text)
 
         # synthesize and vocode
         embeds = [embed] * len(texts)
-        specs = cls.synthesizer.synthesize_spectrograms(
+        specs = self.synthesizer.synthesize_spectrograms(
             texts,
             embeds,
             style_idx=style_idx,
@@ -100,11 +105,14 @@ class MockingBird:
             steps=steps,
         )
         spec = np.concatenate(specs, axis=1)
-        sample_rate = Synthesizer.sample_rate
         if vocoder_type == "WaveRNN":
-            wav, sample_rate = rnn_vocoder.infer_waveform(spec)
+            if not self.rnn_vocoder:
+                raise Exception("Please set wavernn vocoder path first")
+            wav, sample_rate = self.rnn_vocoder.infer_waveform(spec)
         else:
-            wav, sample_rate = gan_vocoder.infer_waveform(spec)
+            if not self.gan_vocoder:
+                raise Exception("Please set hifigan vocoder path first")
+            wav, sample_rate = self.gan_vocoder.infer_waveform(spec)
 
         # Return cooked wav
         out = BytesIO()

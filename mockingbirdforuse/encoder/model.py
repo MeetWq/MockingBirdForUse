@@ -7,8 +7,7 @@ from scipy.interpolate import interp1d
 from torch.nn.parameter import Parameter
 from torch.nn.utils.clip_grad import clip_grad_norm_
 
-from .params_model import *
-from .params_data import *
+from .hparams import hparams as hp
 
 
 class SpeakerEncoder(nn.Module):
@@ -18,13 +17,13 @@ class SpeakerEncoder(nn.Module):
 
         # Network defition
         self.lstm = nn.LSTM(
-            input_size=mel_n_channels,
-            hidden_size=model_hidden_size,
-            num_layers=model_num_layers,
+            input_size=hp.mel_n_channels,
+            hidden_size=hp.model_hidden_size,
+            num_layers=hp.model_num_layers,
             batch_first=True,
         ).to(device)
         self.linear = nn.Linear(
-            in_features=model_hidden_size, out_features=model_embedding_size
+            in_features=hp.model_hidden_size, out_features=hp.model_embedding_size
         ).to(device)
         self.relu = torch.nn.ReLU().to(device)
 

@@ -1,4 +1,8 @@
-class GSTHyperparameters():
+from dataclasses import dataclass
+
+
+@dataclass
+class GSTHyperparameters:
     E = 512
 
     # reference encoder
@@ -10,4 +14,6 @@ class GSTHyperparameters():
     num_heads = 8
 
     n_mels = 256  # Number of Mel banks to generate
-    
+
+
+hparams = GSTHyperparameters()

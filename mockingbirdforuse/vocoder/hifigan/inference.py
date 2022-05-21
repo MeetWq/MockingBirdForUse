@@ -1,60 +1,32 @@
-import os
 import torch
 from pathlib import Path
-from typing import Optional
 
-from . import hparams
+from .hparams import hparams as hp
 from .models import Generator
 from ...log import logger
 
-generator: Optional[Generator] = None
-output_sample_rate: Optional[int] = None
-_device: Optional[torch.device] = None
 
+class HifiGanVocoder:
+    def __init__(self, model_path: Path):
+        torch.manual_seed(hp.seed)
+        self._device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.generator = Generator(hp).to(self._device)
 
-def check_device():
-    global _device
-    if _device is None:
-        _device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        logger.debug("Loading '{}'".format(model_path))
+        state_dict_g = torch.load(model_path, map_location=self._device)
+        logger.debug("Complete.")
 
+        self.generator.load_state_dict(state_dict_g["generator"])
+        self.generator.eval()
+        self.generator.remove_weight_norm()
 
-def load_checkpoint(filepath, device):
-    assert os.path.isfile(filepath)
-    logger.debug("Loading '{}'".format(filepath))
-    checkpoint_dict = torch.load(filepath, map_location=device)
-    logger.debug("Complete.")
-    return checkpoint_dict
+    def infer_waveform(self, mel):
+        mel = torch.FloatTensor(mel).to(self._device)
+        mel = mel.unsqueeze(0)
 
+        with torch.no_grad():
+            y_g_hat = self.generator(mel)
+            audio = y_g_hat.squeeze()
+        audio = audio.cpu().numpy()
 
-def load_model(weights_fpath: Path):
-    global generator, _device, output_sample_rate
-
-    output_sample_rate = hparams.sampling_rate
-    torch.manual_seed(hparams.seed)
-
-    check_device()
-    generator = Generator(hparams).to(_device)
-    state_dict_g = load_checkpoint(weights_fpath, _device)
-    generator.load_state_dict(state_dict_g["generator"])
-    generator.eval()
-    generator.remove_weight_norm()
-
-
-def is_loaded():
-    return generator is not None
-
-
-def infer_waveform(mel):
-
-    if generator is None:
-        raise Exception("Please load hifi-gan in memory before using it")
-
-    mel = torch.FloatTensor(mel).to(_device)
-    mel = mel.unsqueeze(0)
-
-    with torch.no_grad():
-        y_g_hat = generator(mel)
-        audio = y_g_hat.squeeze()
-    audio = audio.cpu().numpy()
-
-    return audio, output_sample_rate
+        return audio, hp.sampling_rate

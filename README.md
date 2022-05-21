@@ -10,11 +10,11 @@
 from pathlib import Path
 from mockingbirdforuse import MockingBird
 
-MockingBird.load_model(
+mockingbird = MockingBird()
+mockingbird.load_model(
     Path("saved_models/encoder.pt"),
     Path("saved_models/hifigan.pt"),
-    Path("saved_models/wavernn.pt"),
 )
-MockingBird.set_synthesizer(Path("azusa.pt"))
-output = MockingBird.synthesize("主播不是你的电梓播放器", Path("record.wav"))  # output type: BytesIO
+mockingbird.set_synthesizer(Path("azusa.pt"))
+output = mockingbird.synthesize("主播不是你的电梓播放器", Path("record.wav"))  # output type: BytesIO
 ```
