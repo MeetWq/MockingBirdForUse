@@ -1,15 +1,15 @@
 [tool.poetry]
 name = "MockingBirdForUse"
-version = "0.2.2"
+version = "0.2.3"
 description = ""
 authors = ["meetwq <meetwq@gmail.com>"]
 
 [tool.poetry.dependencies]
 python = ">=3.8,<3.11"
-torch = "^1.11.0"
+torch = "^1.10.0"
 scipy = "^1.8.0"
 librosa = "^0.9.0"
-numpy = "^1.19.0"
+numpy = "^1.21.0"
 numba = "^0.55.0"
 pypinyin = ">=0.40.0"
 webrtcvad = "^2.0.0"
