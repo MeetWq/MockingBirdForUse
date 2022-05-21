@@ -36,13 +36,7 @@ class WaveRNNVocoder:
         self._model.eval()
 
     def infer_waveform(
-        self,
-        mel,
-        normalize=True,
-        batched=True,
-        target=8000,
-        overlap=800,
-        progress_callback=None,
+        self, mel, normalize=True, batched=True, target=8000, overlap=800
     ):
         """
         Infers the waveform of a mel spectrogram output by the synthesizer (the format must match
@@ -58,7 +52,5 @@ class WaveRNNVocoder:
         if normalize:
             mel = mel / hp.mel_max_abs_value
         mel = torch.from_numpy(mel[None, ...])
-        wav = self._model.generate(
-            mel, batched, target, overlap, hp.mu_law, progress_callback
-        )
+        wav = self._model.generate(mel, batched, target, overlap, hp.mu_law)
         return wav, hp.sample_rate
