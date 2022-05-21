@@ -4,7 +4,7 @@ import webrtcvad
 import numpy as np
 from pathlib import Path
 from typing import Optional, Union
-from scipy.ndimage.morphology import binary_dilation
+from scipy.ndimage import binary_dilation
 
 from .hparams import hparams as hp
 
